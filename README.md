@@ -7,176 +7,91 @@ In de starter vind je een applicatie die een lijst van 'superhelden' laat zien.
 Deze gaan we refactoren. 
 
 ## Providers
-Op dit moment staat er in de het component 
+Op dit moment staat er in de het component 'Heroes' een lijst van helden. Deze gaan we verplaatsen naar een provider.
 
-1. Open _/config/auth-config.js_.
-2. We gaan gebruik maken van passport en willen lokaal inloggen. Importeer daarom:
+1. Open _/architecture/src/app/heroes/heroes.component.ts
+2. Maak hier een nieuwe provider aan met de naam heroes.provider.ts
+
 ```javascript
-var passport = require("passport");
-var LocalStrategy = require('passport-local').Strategy;
+import { Injectable } from '@angular/core';
+
+@Injectable()
+export class HeroProvider {
+
+}
 ```
-3. Nu maken we een strategy aan die het mogelijk maakt je username / password mee te geven en die de juiste user dan op het request (voor in de route) zet:<br/>
-Merk op dat we done aanroepen en dan de user óf false zetten. Dit staat gelijk aan ingelogd zijn of niet.
-```javascript
-passport.use('login', new LocalStrategy(function (username, password, done) {
-    var user = users[_.findIndex(users, { name: username })];
+3. Maak in deze provider een lijst van helden en een methode om ze op te halen
 
-    if (user && user.password === password) {
-        done(null, user);
-    } else {
-        done(null, false);
+```javascript
+    private _heroes: Hero[];
+
+    constructor(){
+        this._heroes = [];
+        this._heroes[0] = new Hero(1, "Bedmen");
+        this._heroes[1] = new Hero(2, "Wonden woman");
+        this._heroes[2] = new Hero(3, "Flesje");
+        this._heroes[3] = new Hero(4, "Supermarktman");
+        this._heroes[4] = new Hero(5, "Green Lantaarnpaal");
     }
-}));
-``` 
-4. We moeten de app nog laten weten dat we passport gebruiken _app.js_:
-```javascript
-var passport = require('passport')
-app.use(passport.initialize());
+    
+    public getHeroes(){
+        return this._heroes;
+    }
 ```
-5. Nu kunnen we dit gebruiken in de index route _/routes/index.route.js_. Require passport en gebruik de middleware in de route:
-```javascript
-var passport = require("passport");
+4. Om de provider te kunnen gebruiken moet deze bekend zijn bij een module. Bijvoorbeeld de app.module
 
-...
-router.post("/login", passport.authenticate('login', { session: false }), function(req, res){
-	return res.json({ user: req.user });
-});
-```
-5. Nu kunnen we posten naar http://localhost:3000/login en dan krijgen we de user terug met bijvoorbeeld:
-```
-username: jan
-password: jantje
-```
-6. We hebben de user teruggegeven, maar we willen natuurlijk de token teruggeven zodat de client die elke keer mee kan sturen.<br/>
-Nu kunnen we de login uitbreiden (en meteen maar ook even het password weghalen):
 ```javascript
-var jwt = require('jsonwebtoken');
-var secret = 'Hier komt jouw secret die niemand kent, die stop je dus niet in je public GIT code, maar in config of iets dergelijks';
-...
-var payload = { id: user.id, username: user.name };
-var token = jwt.sign(payload, secret, { expiresIn: '24h'});
-
-delete user.password;
-user.token = token;
-done(null, user);
+  providers: [HeroProvider],
 ```
-7. Bewaar de token die je gekregen hebt (normaal in local storage o.i.d. in de client). Die ga je meegeven aan de overige requests.
-8. Nu gaan we er voor zorgen dat users met JWT kunnen authenticeren, dit doen we dus weer in _/config/auth-config.js_ met de JWT strategy:<br />
-We halen de token uit de header en we lezen de payload die we eerder hebben gegenereerd uit.
+5. Als laatste stap kunnen we de provider injecteren en hergebruiken in het component.
 ```javascript
-var passportJWT = require("passport-jwt");
-var ExtractJwt = passportJWT.ExtractJwt;
-var JwtStrategy = passportJWT.Strategy;
-...
-passport.use('jwt', new JwtStrategy({ jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), secretOrKey: secret }, function(jwt_payload, next) {
-  var user = users[_.findIndex(users, {id: jwt_payload.id})];
-  if (user) {
-    next(null, user);
-  } else {
-    next(null, false);
+  constructor(private heroProvider: HeroProvider){
+      this.heroes = this.heroProvider.getHeroes();
   }
-}));
 ```
-9. Nu kan je in _/routes/user.route.js_ de middleware toevoegen om via een JWT header te laten authenticeren:<br/>
-De user komt op het request te staan en wanneer je geen authenticatie meegeeft zal je deze resultaten niet terugkrijgen.
-```javascript
-var passport = require('passport');
-...
-router.get("/me", passport.authenticate('jwt', { session: false }), function (req, res) {
-    res.json({ user: req.user });
-});
-```
-10. Wanneer je het request uitvoert zal je zien dat je nu de juiste data terug krijgt.
-11. Zo kan je ook de gehele route Illuminati ineenkeer afschermen, dit doe je in de _app.js_:
-```javascript
-app.use('/illuminati', passport.authenticate('jwt', { session: false }), require('./routes/illuminati.route')());
-```
-## Autorizatie
-Nu we onszelf bekend kunnen maken, kunnen we ook bepaalde delen van onze applicatie afschermen. Dit gaan we doen met **Connect-Roles**.
-1. Eerst willen we Connect-Roles enablen. We maken een nieuw object aan en stellen meteen een failure handler.<br />
-Open _/config/roles-config.js_ en voeg het volgende in:
-```javascript
-var ConnectRoles = require('connect-roles');
 
-var roles = new ConnectRoles();
+### Modules
+Je begint te merken dat we nu van alles aan het doen zijn met onze heroes. Het kan makkelijk zijn om een set van componenten en providers in een module te bundelen. 
 
-var roles = new ConnectRoles({
-    failureHandler: function (req, res, action) {
-        res.status(403).json({
-            message: 'access denied',
-            action: action
-        });
-    }
-});
+1. Maak een nieuwe module met de naam HeroesModule
+```javascript
+import { BrowserModule } from '@angular/platform-browser';
+import { NgModule } from '@angular/core';
 
-module.exports = roles;
-``` 
-2. Nu gaan we in _app.js_ aangeven dat we deze middleware willen gebruiken. <br/>
-**Let op: Dit moet na de passport declaratie!**
-```javascript
-var roles = require('./config/roles-config');
-app.use(roles.middleware());
+
+@NgModule({
+  declarations: [],
+  imports: [
+    BrowserModule
+  ],
+  providers: [],
+})
+export class HeroesModule { }
 ```
-3. We gaan de rol admin beschermen, hier maken we een functie voor in _config/roles-config.js_:
+2. Plaats alle providers en componenten in deze module i.p.v de app.module
 ```javascript
-roles.use('admin', function (req) {
-	if(req.user){
-		var adminRoleIndex = _.findIndex(req.user.roles, (r) => r == 'admin');
-		if(adminRoleIndex >= 0){
-			return true;
-		};
-		// Don't return false, this way we can get into the next checker.
-	}
-});
+  declarations: [HeroesComponent],
+  imports: [
+    BrowserModule
+  ],
+  providers: [HeroProvider],
 ```
-4. Nu kunnen we deze gebruiken in _/routes/index.route.js_ om de admin route te beschermen.<br />
-Daarbij moeten we ook nog even aangeven dat we via JWT willen authenticeren.
+3. Gebruik deze module in de app.module!
 ```javascript
-var roles = require('../config/roles-config');
-...
-router.get('/admin', roles.is('admin'), function(req, res){
-    res.json({ message: 'Success! Je bent een administrator en je mag deze pagina bekijken.' });
-});
+@NgModule({
+  declarations: [
+    AppComponent,
+  ],
+  imports: [
+    BrowserModule,
+    HeroesModule
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
 ```
-5. Wanneer je een GET uitvoert zal je zien dat je hem niet meer mag benaderen, tenzij je een header meegeeft.
-6. De rollen worden van boven naar beneden behandeld, daarom retourneren we geen false. <br />
-Als we nu ook een illuminatierol aangeven kunnen we straks zowel met deze als met de adminrol bij de illuminatie:
 ```javascript
-roles.use('illuminati', function (req) {
-	if(req.user){
-		var illuminatiRoleIndex = _.findIndex(req.user.roles, (r) => r == 'illuminati');
-		if(illuminatiRoleIndex >= 0){
-			return true;
-		};
-		// Don't return false, this way we can get into the next checker.
-	}
-});
 ```
-Pas daarbij de admin functie aan zodat deze geen string meer als eerste parameter verwacht. Deze methode moet wel onder de illuminatirol staan.<br/>
-7. Pas _app.js_ zo aan dat de illuminatiroute deze rol gebruikt:
 ```javascript
-app.use('/illuminati', passport.authenticate('jwt', { session: false }), roles.is('illuminati'), require('./routes/illuminati.route'));
 ```
-8. Merk op dat nu alle illuminati bij deze route kunnen, maar ook nog steeds alle admins.
-9. Ten slotte willen we nu de _/:id_ binnen illuminatie beperken tot jezelf:
-```javascript
-var roles = require('../config/roles-config');
-...
-router.get("/:id", roles.is('self'), function (req, res) {
-    res.json(_.filter(users, u => u.id == req.params.id));
-});
-```
-10. Pas dan de config weer aan met de volgende methode (let op: boven de admin):
-```javascript
-roles.use('self', function(req){
-	if(req.user){
-		if(req.user.id == req.params.id){
-			return true;
-		}
-	}
-});
-``` 
-11. Nu kan je alleen jezelf als illuminati opvragen, je moet dus de rol hebben en je moet je eigen ID gebruiken (of je moet admin zijn).
-## Meer weten?
-Kijk voor passport op http://www.passportjs.org <br/>
-Kijk voor connect-roles op https://github.com/ForbesLindesay/connect-roles
