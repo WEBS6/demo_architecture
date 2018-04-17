@@ -92,6 +92,40 @@ export class HeroesModule { }
     })
     export class AppModule { }
 ```
+## Observables
+
+We kunnen onze provider nog mooier maken. Dit kunnen we doen door i.p.v een lijst terug te geven gebruik te gaan maken van een Observable. Om deze observable te maken gebruiken we een BehaviorSubject. 
+
+1. Importeer de BehaviorSubject uit de ReactiveX library van JavaScript.
+
+```javascript
+import { BehaviorSubject } from "rxjs/BehaviorSubject";
+```
+
+2. Maak een property op je provider met de naam Heroes van het type BehaviorSubject. Deze gaan we terug geven als Observable i.p.v onze array. Vergeet ook het type in je component nu niet aan te passen naar een observable!
+
+```javascript
+    constructor(){
+        this._heroes = [];
+        ...
+        this.Heroes = new BehaviorSubject(this._heroes);
+    }
+
+    public Heroes: BehaviorSubject<Hero[]>;
+
+    private _heroes: Hero[];
+    
+    public getHeroes(){
+        return this.Heroes.asObservable();
+    }
+```
+3. Nu moeten we nog 1 belangrijk ding aanpassen voordat het werkt. Onze heroes is nu geen platte lijst meer maar een Observable. Om deze goed te kunnen laten zien in onze heroes template moeten we gebruik gaan maken van de async pipe.
+
+```html
+  <li *ngFor="let hero of heroes | async" (click)="goTo(hero)">
+```
+
+
 <!-- ## Routing
 We willen ook graag naar 1 specifieke hero kunnen navigeren. Dit gaan we meteen goed aanpakken zodat links de lijst in beeld blijft, maar we wel echt naar de hero toe navigeren. Hiervoor zijn wel wat wijzigingen nodig. 
 
