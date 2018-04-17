@@ -13,12 +13,12 @@ Op dit moment staat er in de het component 'Heroes' een lijst van helden. Deze g
 2. Maak hier een nieuwe provider aan met de naam heroes.provider.ts
 
 ```javascript
-import { Injectable } from '@angular/core';
+    import { Injectable } from '@angular/core';
 
-@Injectable()
-export class HeroProvider {
+    @Injectable()
+    export class HeroProvider {
 
-}
+    }
 ```
 3. Maak in deze provider een lijst van helden en een methode om ze op te halen
 
@@ -68,30 +68,63 @@ import { NgModule } from '@angular/core';
 })
 export class HeroesModule { }
 ```
-2. Plaats alle providers en componenten in deze module i.p.v de app.module
+2. Plaats alle providers en componenten in deze module i.p.v de app.module. Vergeet je componenten hier ook niet te exporteren. Anders mogen andere modules er geen gebruik van maken!
 ```javascript
-  declarations: [HeroesComponent],
+  declarations: [HeroesComponent, HeroDetailsComponent],
   imports: [
     BrowserModule
   ],
   providers: [HeroProvider],
+  exports: [HeroesComponent, HeroDetailsComponent]
 ```
 3. Gebruik deze module in de app.module!
 ```javascript
-@NgModule({
-  declarations: [
-    AppComponent,
-  ],
-  imports: [
-    BrowserModule,
-    HeroesModule
-  ],
-  providers: [],
-  bootstrap: [AppComponent]
-})
-export class AppModule { }
+    @NgModule({
+    declarations: [
+        AppComponent,
+    ],
+    imports: [
+        BrowserModule,
+        HeroesModule
+    ],
+    providers: [],
+    bootstrap: [AppComponent]
+    })
+    export class AppModule { }
 ```
+<!-- ## Routing
+We willen ook graag naar 1 specifieke hero kunnen navigeren. Dit gaan we meteen goed aanpakken zodat links de lijst in beeld blijft, maar we wel echt naar de hero toe navigeren. Hiervoor zijn wel wat wijzigingen nodig. 
+
+1. Maak een nieuw component die de details van 1 held laat zien met de naam HeroComponent. Zet dit component netjes in de folder Heroes en voeg hem toe aan je heroes.module!
+
+```javascript
+export class HeroDetailsComponent implements OnInit {
+
+  public Hero: Hero;
+
+  constructor() { }
+
+  ngOnInit() {
+  }
+
+}
+```
+2. Hier heb je alvast een voorbeeld template!
+```html
+<div *ngIf="hero">
+  <h2>{{hero.name}} ({{hero.id}})</h2>
+  <img width="300px" src="https://battletime.herokuapp.com/images/hero_{{hero.id}}.png">
+</div>
+```
+
+3. 
 ```javascript
 ```
+
+
 ```javascript
 ```
+
+
+```javascript
+``` -->
